@@ -1,0 +1,23 @@
+prometheus:
+  prometheusSpec:
+    additionalScrapeConfigs:
+      - job_name: valkey-in-cluster
+        scheme: http
+        scrape_interval: 1m
+        metrics_path: /scrape
+        static_configs:
+          - targets:
+              - valkey-service.monitoring.svc.cluster.local
+        relabel_configs:
+          - source_labels:
+              - __address__
+            target_label: __param_target
+          - source_labels:
+              - __param_target
+            target_label: instance
+          - replacement: redis-exporter-prometheus-redis-exporter:9121
+            target_label: __address__
+          - replacement: production
+            target_label: env
+          - target_label: job
+            replacement: redis_exporter

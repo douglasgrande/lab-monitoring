@@ -1,0 +1,19 @@
+# Habilited the component scraping kube state metrics
+kubeStateMetrics:
+  enabled: true
+
+prometheus:
+  prometheusSpec:
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+    externalLabels:
+      cluster: argocd-prometheus-alertmanager
+    additionalAlertRelabelConfigs:
+      - replacement: "lab-argocd"
+        action: replace
+        target_label: "env"
