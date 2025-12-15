@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: lab-prometheus-stack
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=default"]
+  generators:
+    - list:
+        elements:
+        - name: in-cluster
+          server: https://kubernetes.default.svc
+  template:
+    metadata:
+      name: '{{.name}}-prometheus-stack'
+    spec:
+      project: default
+      destination:
+        server: '{{.server}}'
+        namespace: monitoring
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - ApplyOutOfSyncOnly=true
+      sources:
+        - repoURL: https://prometheus-community.github.io/helm-charts
+          chart: kube-prometheus-stack
+          targetRevision: 55.7.0
+          helm:
+            releaseName: monitor
+            valueFiles:
+              # Reference: Default values
+              - $values/core-values/prometheus/default-prometheus.yaml
+              - $values/core-values/prometheus/default-prometheus-alertmanager.yaml
+              - $values/core-values/prometheus/exporters/default-exporters.yaml
+              - $values/core-values/prometheus/jobs/default-jobs.yaml
+              - $values/core-values/prometheus/rules/default-rules.yaml
+              # Reference: Customizable values
+              - $values/custom-values/prometheus/{{.name}}/prometheus.yaml
+              - $values/custom-values/prometheus/{{.name}}/exporters/exporters.yaml
+              - $values/custom-values/prometheus/{{.name}}/jobs/jobs.yaml
+              - $values/custom-values/prometheus/{{.name}}/rules/rules.yaml
+        # default values
+        - repoURL: https://github.com/douglasgrande/lab-argocd-prometheus.git
+          targetRevision: main
+          ref: values

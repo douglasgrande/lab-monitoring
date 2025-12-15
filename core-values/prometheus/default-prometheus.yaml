@@ -1,0 +1,129 @@
+## Default prometheus-operator values for all environments
+## General
+nameOverride: "lab-argocd"
+
+defaultRules:
+  rules:
+    etcd: false
+    kubeScheduler: false
+    alertmanager: false
+    general: false
+    k8sContainerCpuUsageSecondsTotal: false
+    k8sContainerMemoryCache: false
+    k8sContainerMemoryRss: false
+    k8sContainerMemorySwap: false
+    k8sContainerResource: false
+    k8sContainerMemoryWorkingSetBytes: false
+    k8sPodOwner: false
+    kubeApiserverAvailability: false
+    kubeApiserverBurnrate: false
+    kubeApiserverHistogram: false
+    kubeApiserverSlos: false
+    kubeControllerManager: false
+    kubelet: false
+    kubeProxy: false
+    kubePrometheusGeneral: false
+    kubePrometheusNodeRecording: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    node: false
+    nodeExporterRecording: false
+    windows: false
+
+## Alertmanager
+alertmanager:
+  enabled: false
+
+## Grafana
+grafana:
+  enabled: false
+
+## Exporters
+kubernetesServiceMonitors:
+  enabled: true
+
+kubeApiServer:
+  enabled: false
+
+kubelet:
+  enabled: true
+  serviceMonitor:
+    metricRelabelings:
+      - sourceLabels:
+          - __name__
+        regex: ^go_.*
+        action: drop
+
+kubeControllerManager:
+  enabled: false
+
+coreDns:
+  enabled: false
+
+kubeDns:
+  enabled: false
+
+kubeEtcd:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+kubeProxy:
+  enabled: false
+
+kubeStateMetrics:
+  enabled: false
+
+## Prometheus operator
+prometheusOperator:
+  admissionWebhooks:
+    enabled: true
+  kubeletService:
+    enabled: true
+  resources:
+    limits:
+      cpu: 200m
+      memory: 400Mi
+    requests:
+      cpu: 100m
+      memory: 200Mi
+  serviceMonitor:
+    metricRelabelings:
+      - sourceLabels:
+          - __name__
+        regex: ^go_.*
+        action: drop
+global:
+  imagePullSecrets:
+   - name: "dockerhub"
+
+## Prometheus
+prometheus:
+  enabled: true
+  serviceMonitor:
+    metricRelabelings:
+      - sourceLabels:
+          - __name__
+        regex: ^go_.*
+        action: drop
+  prometheusSpec:
+    image:
+      registry: quay.io
+      repository: prometheus/prometheus
+      tag: v2.48.1
+    resources:
+      limits:
+        cpu: 1
+        memory: 1Gi
+      requests:
+        cpu: 250m
+        memory: 512Mi
+    replicas: 1
+    scrapeInterval: 60s
+    replicaExternalLabelName: "replica"
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+
+thanosRuler:
+  enabled: false

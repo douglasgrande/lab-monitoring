@@ -1,0 +1,129 @@
+additionalPrometheusRulesMap:
+  kube-custom-alerts:
+    groups:
+      - name: kube-health-replicas
+        rules:
+          - alert: KubeHealthReplicas
+            expr: kube_deployment_status_replicas_available{job="kube-state-metrics",namespace=~".*",deployment!="pingsource-mt-adapter"} == 0
+            for: 3m
+            annotations:
+              summary: "Health replicas is zero"
+              message: "Health replicas is zero for 3m in namespace {{ $labels.namespace }}"
+            labels:
+              severity: critical
+      - name: kube-hpa-max
+        rules:
+          - alert: KubeMaxHpaReachingOut
+            expr: kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler!~"logstash.*",job="kube-state-metrics",namespace=~".*"} == ceil(kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics",namespace=~".*"} * 0.8) AND kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics",namespace=~".*"} != 1 AND kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics",namespace=~".*"} != kube_horizontalpodautoscaler_spec_min_replicas{job="kube-state-metrics",namespace=~".*"}
+            for: 5m
+            annotations:
+              summary: "HPA is running at 80% of max replicas"
+              message: "HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} has been running at 80% of max replicas for longer than 5 minutes."
+            labels:
+              severity: high
+          - alert: KubeMaxHpaReachedOut
+            expr: kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler!~"logstash.*",job="kube-state-metrics",namespace=~".*"} == kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics",namespace=~".*"} AND kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics",namespace=~".*"} != 1 AND kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics",namespace=~".*"} != kube_horizontalpodautoscaler_spec_min_replicas{job="kube-state-metrics",namespace=~".*"}
+            for: 0m
+            annotations:
+              summary: "HPA is running at max replicas"
+              message: "HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} has been running at max replicas"
+            labels:
+              severity: critical
+      - name: kube-pod-restart
+        rules:
+          - alert: KubePodRestartTotal
+            expr: sum by (namespace) (kube_pod_container_status_restarts_total{namespace=~".*"} > 5)
+            for: 5m
+            annotations:
+              summary: "The number of pod restart is over 5"
+              message: "The number of pod restart is over 5 in namespace {{ $labels.namespace }}"
+            labels:
+              severity: high
+      - name: kube-pod-readiness
+        rules:
+          - alert: K8sPodsNoReadiness
+            expr: avg by (namespace,pod,container) (kube_pod_container_status_ready) == 0 and kube_pod_info{created_by_kind!="Job"}
+            for: 5m
+            annotations:
+              summary: "K8s Pods with Problems: No Readiness"
+              message: "K8s Pods with Problems: No Readiness (1/2 for example) in namespace {{ $labels.namespace }}"
+            labels:
+              severity: critical
+      - name: kube-pod-pending
+        rules:
+          - alert: KubePodPending
+            expr: kube_pod_status_phase{phase="Pending"} > 0
+            for: 5m
+            annotations:
+              summary: Pod status "Pending" for longer than 5 minutes
+              message: Pod status "Pending" for longer than 5 minutes - {{ $labels.namespace }}/{{ $labels.pod }}
+            labels:
+              severity: critical
+  
+  # Node exporter alerts
+  node-exporter:
+    groups:
+      - name: node-exporter
+        rules:
+          - alert: CPUSystemUsageTooLow
+            expr: avg(rate(node_cpu_seconds_total{mode="system"}[5m])) * 100 < 2
+            for: 5m
+            annotations:
+              summary: "CPU System Usage Critically Low on {{ $externalLabels.cluster }}"
+              description: "CPU System usage on {{ $externalLabels.cluster }} is below 2% for the last 5 minutes (current value: {{ $value }}%). Investigate potential system issues or underutilization."
+            labels:
+              severity: critical
+          - alert: CPUUserUsageTooLow
+            expr: avg(rate(node_cpu_seconds_total{mode="user"}[5m])) * 100 < 5
+            for: 5m
+            annotations:
+              summary: "CPU User Usage Critically Low on {{ $externalLabels.cluster }}"
+              description: "CPU User usage on {{ $externalLabels.cluster }} is below 5% for the last 5 minutes (current value: {{ $value }}%). Possible application issues or underutilization detected."
+            labels:
+              severity: critical
+          - alert: CPUIdleTooHigh
+            expr: avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100 > 90
+            for: 5m
+            annotations:
+              summary: "CPU Idle Extremely High on {{ $externalLabels.cluster }}"
+              description: "CPU Idle on {{ $externalLabels.cluster }} has exceeded 90% for the last 5 minutes (current value: {{ $value }}%). Investigate potential underutilization or resource allocation issues."
+            labels:
+              severity: critical
+          - alert: NetworkReceiveTooLow
+            expr: avg(rate(node_network_receive_bytes_total[5m])) < 10000
+            for: 5m
+            annotations:
+              summary: "Network Receive Traffic Critically Low on {{ $externalLabels.cluster }}"
+              description: "Network receive traffic (RX) on {{ $externalLabels.cluster }} is below 10KB/s for the last 5 minutes (current value: {{ $value }} bytes/s). Possible network issue or service downtime."
+            labels:
+              severity: critical
+          - alert: NetworkTransmitTooLow
+            expr: avg(rate(node_network_transmit_bytes_total[5m])) < 10000
+            for: 5m
+            annotations:
+              summary: "Network Transmit Traffic Critically Low on {{ $externalLabels.cluster }}"
+              description: "Network transmit traffic (TX) on {{ $externalLabels.cluster }} is below 10KB/s for the last 5 minutes (current value: {{ $value }} bytes/s). Investigate potential network issues or service disruptions."
+            labels:
+              severity: critical
+  # ArgoCD alerts
+  argocd:
+    groups:
+    - name: argocd-alerts
+      rules:
+      - alert: ArgoAppSyncUnknown
+        expr: argocd_app_info{sync_status="Unknown"} >= 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Application sync status is unknown"
+          message: "The application '{{ $labels.name }}' in project '{{ $labels.project }}' in repository '{{$labels.repo}} has an unknown sync status."
+      - alert: ArgoAppOutOfSync
+        expr: argocd_app_info{sync_status="OutOfSync"} >= 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Application is out of sync"
+          message: "The application '{{ $labels.name }}' in project '{{ $labels.project }}' is out of sync with the desired state."
+  

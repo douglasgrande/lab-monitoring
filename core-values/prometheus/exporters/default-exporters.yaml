@@ -1,0 +1,29 @@
+# Default exporters
+prometheus-node-exporter:
+  podLabels:
+    jobLabel: node-exporter
+  releaseLabel: true
+  extraArgs:
+    - --collector.disable-defaults
+    - --web.disable-exporter-metrics
+    - --collector.uname
+    - --collector.cpu
+    - --collector.meminfo
+    - --collector.diskstats
+    - --collector.filesystem
+    - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+    - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
+    - --collector.loadavg
+    - --collector.netstat
+    - --collector.sockstat
+    - --collector.netdev
+    - --collector.netclass
+    - --collector.systemd
+  prometheus:
+    monitor:
+      enabled: true
+      metricRelabelings:
+        - sourceLabels:
+            - __name__
+          regex: ^node_.*(guest|discard|flush|info|FileHugePages|FilePmdMapped|ShmemHugePages|ShmemPmdMapped|KReclaimable|Icmp|Ip6|UdpLite6|Udp6|UDP6|UDPLITE6|RcvbufErrors|dormant|FRAG6|flags|TCP6|protocol|assign|iface|nohandler|RAW6|Percpu|Writeback_bytes|TCPTimeouts|OutRsts|device_id|changes|SndbufErrors|dev_group|device_error).*
+          action: drop
