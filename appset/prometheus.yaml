@@ -46,6 +46,6 @@ spec:
               - $values/custom-values/prometheus/{{.name}}/jobs/jobs.yaml
               - $values/custom-values/prometheus/{{.name}}/rules/rules.yaml
         # default values
-        - repoURL: https://github.com/douglasgrande/lab-argocd-prometheus.git
+        - repoURL: https://github.com/douglasgrande/lab-monitoring.git
           targetRevision: main
           ref: values
