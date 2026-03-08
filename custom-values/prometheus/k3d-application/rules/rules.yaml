@@ -1,0 +1,102 @@
+additionalPrometheusRulesMap:
+  # Redis exporter alerts
+  redis-exporter:
+    groups:
+      - name: redis-exporter
+        rules:
+          - alert: Redis - Service Down
+            expr: redis_up == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: Redis service is down
+              message: Redis service is down in instance {{ $labels.instance }}
+          - alert: Redis - 90% memory usage
+            expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: Redis is running out of memory
+              message: Redis is running out of memory (> 90% used) in instance {{ $labels.instance }}
+          - alert: Redis - 75% memory usage
+            expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 75
+            for: 5m
+            labels:
+              severity: high
+            annotations:
+              summary: Redis is running out of memory
+              message: Redis is running out of memory (> 75% used) in instance {{ $labels.instance }}
+          - alert: Redis - ReplicationBroken
+            expr: delta(redis_connected_slaves[10m]) != 0
+            for: 5m
+            labels:
+              severity: high
+            annotations:
+              summary: Redis replication broken
+              message: Redis lost a slave in instance {{ $labels.instance }}
+          - alert: Redis - Connections Greater than 50000
+            expr: redis_connected_clients > 50000
+            for: 10m
+            labels:
+              severity: critical
+            annotations:
+              summary: Too many connected clients in Redis
+              message: Redis instance has more than 50000 client connections in instance {{ $labels.instance }}
+          - alert: Redis - Connections Greater than 30000
+            expr: redis_connected_clients > 30000
+            for: 10m
+            labels:
+              severity: high
+            annotations:
+              summary: Too many connected clients in Redis
+              message: Redis instance has more than 30000 client connections in instance {{ $labels.instance }}
+          - alert: Redis - NotEnoughConnections
+            expr: redis_connected_clients < 10
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: Not enough client connections in Redis
+              message: Redis instance should have more client connections (> 10) in instance {{ $labels.instance }}
+          - alert: Redis - RejectedConnections
+            expr: increase(redis_rejected_connections_total[10m]) > 0
+            for: 5m
+            labels:
+              severity: high
+            annotations:
+              summary: Redis rejected connections increased
+              message: Some connections to Redis has been rejected in instance {{ $labels.instance }}
+          - alert: Redis - Engine CPU Utilization is above 70%
+            expr: aws_elasticache_engine_cpuutilization_average offset 10m > 70
+            for: 5m
+            labels:
+              severity: high
+            annotations:
+              summary: Engine CPU Utilization average is above 70% in AWS Redis
+              message: Engine CPU utilization average is above 70% in cluster id {{ $labels.cache_cluster_id }}
+          - alert: Redis - Engine CPU Utilization is above 90%
+            expr: aws_elasticache_engine_cpuutilization_average offset 10m > 90
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: Engine CPU Utilization average is above 90% in AWS Redis
+              message: Engine CPU utilization average is above 90% in cluster id {{ $labels.cache_cluster_id }}
+          - alert: Redis - Engine CPU Utilization is above 75%
+            expr: rate(redis_cpu_user_seconds_total[2m]) * 100 > 75
+            for: 5m
+            labels:
+              severity: high
+            annotations:
+              summary: Engine CPU Utilization average is above 75% in Redis
+              message: Engine CPU utilization average is above 75% in instance {{ $labels.instance }}
+          - alert: Redis - Engine CPU Utilization is above 85%
+            expr: rate(redis_cpu_user_seconds_total[2m]) * 100 > 85
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: Engine CPU Utilization average is above 85% in Redis
+              message: Engine CPU utilization average is above 85% in instance {{ $labels.instance }}
